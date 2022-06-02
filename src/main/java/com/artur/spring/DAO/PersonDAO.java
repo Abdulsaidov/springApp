@@ -1,44 +1,105 @@
 package com.artur.spring.DAO;
 
 import com.artur.spring.models.Person;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.*;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Optional;
 
 @Component
 public class PersonDAO {
 
-    private final JdbcTemplate jdbcTemplate;
+    private final SessionFactory sessionFactory;
 
     @Autowired
-    public PersonDAO(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    public PersonDAO(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
     }
 
+    @Transactional(readOnly = true)
     public List<Person> index() {
-        return jdbcTemplate.query("SELECT * FROM Person", new BeanPropertyRowMapper<>(Person.class));
+        Session session = sessionFactory.getCurrentSession();
+       return session.createQuery("select p from Person  p", Person.class).getResultList();
     }
 
+    @Transactional
     public Person show(int id) {
-        return jdbcTemplate.query("SELECT * FROM Person where id=?", new Object[]{id},
-                new BeanPropertyRowMapper<>(Person.class)).stream().findAny().orElse(null);
+        Session session = sessionFactory.getCurrentSession();
+        return session.get(Person.class,id);
     }
+    @Transactional
+    public Optional<Person> show(String email) {
+        Session session = sessionFactory.getCurrentSession();
+        return session.createQuery("select p from Person  p", Person.class).getResultList().stream().
+                filter(person -> person.getEmail().equals(email)).findAny();
+                }
 
+    @Transactional
     public void save(Person person) {
-        jdbcTemplate.update("INSERT INTO person VALUES (1,?,?,?)", person.getName(), person.getAge(), person.getEmail());
+        Session session = sessionFactory.getCurrentSession();
+        session.persist(person);
     }
 
+    @Transactional
     public void update(int id, Person updatedPerson) {
-        jdbcTemplate.update("UPDATE person SET name=?, age=?, email=? where id=?", updatedPerson.getName(), updatedPerson.getAge(), updatedPerson.getEmail(), id);
+        Session session = sessionFactory.getCurrentSession();
+        Person toBeUpdated = session.get(Person.class,id);
+        toBeUpdated.setName(updatedPerson.getName());
+        toBeUpdated.setAge(updatedPerson.getAge());
+        toBeUpdated.setEmail(updatedPerson.getEmail());
+    }
+    @Transactional
+    public void delete(int id) {
+        Session session = sessionFactory.getCurrentSession();
+        session.remove(session.get(Person.class,id));
     }
 
-    public void delete(int id) {
-        jdbcTemplate.update("DELETE from person where id=?", id);
-    }
+//    public void testMultipleUpdate() {
+//        List<Person> people = create1000person();
+//        long before = System.currentTimeMillis();
+//
+//        for (Person person : people) {
+//            jdbcTemplate.update("INSERT INTO person VALUES (?,?,?,?,?)",
+//                   person.getId(), person.getName(), person.getAge(), person.getEmail(),person.getAddress());
+//        }
+//
+//        long after = System.currentTimeMillis();
+//        System.out.println("Time " + (after - before));
+//    }
+//
+//    public void testBatchUpdate() {
+//        List<Person> people = create1000person();
+//        long before = System.currentTimeMillis();
+//
+//        jdbcTemplate.batchUpdate("INSERT INTO person VALUES (?,?,?,?)", new BatchPreparedStatementSetter() {
+//            @Override
+//            public void setValues(PreparedStatement ps, int i) throws SQLException {
+//                ps.setInt(1,people.get(i).getId());
+//                ps.setString(2,people.get(i).getName());
+//                ps.setInt(3,people.get(i).getAge());
+//                ps.setString(4,people.get(i).getEmail());
+//            }
+//
+//            @Override
+//            public int getBatchSize() {
+//                return people.size();
+//            }
+//        });
+//
+//        long after = System.currentTimeMillis();
+//        System.out.println("Time " + (after - before));
+//    }
+//
+//    private List<Person> create1000person() {
+//        List<Person> people = new ArrayList<>();
+//        for (int i = 0; i < 1000; i++) {
+//            people.add(new Person(i, "Name" + i, 30, "test" + i + "@mail.ru", "belgorod"));
+//        }
+//        return people;
+//    }
 }
