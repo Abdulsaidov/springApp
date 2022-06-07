@@ -1,22 +1,33 @@
 package com.artur.spring.models;
 
 
-import javax.validation.constraints.Email;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.Size;
+import javax.persistence.*;
+import javax.validation.constraints.*;
 
+@Entity
+@Table(name = "person")
 public class Person {
+    @Id
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
     @NotEmpty(message = "Need name")
     @Size(min =  2, max = 30,message = "no way")
+    @Column(name = "name")
     private String name;
     @Min(value = 0, message = "no no no")
+    @Column(name = "age")
     private int age;
     @NotEmpty (message = "need smth")
     @Email
+    @Column(name = "email")
+
     private String email;
+
+    @Pattern(regexp = "[A-Z]\\w+, [A-Z]\\w+, \\d{6}", message = "Format address: Country, City, Postal Code(111111)")
+    @Column(name = "address")
+    private String address;
 
     public Person() {
     }
@@ -53,11 +64,20 @@ public class Person {
         this.email = email;
     }
 
-    public Person(int id, String name, int age, String email) {
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public Person(int id, String name, int age, String email, String address) {
         this.id = id;
         this.name = name;
         this.age = age;
         this.email = email;
+        this.address = address;
     }
 
 }
